@@ -13,6 +13,7 @@ var createTask = function(taskText, taskDate, taskList) {
   // append span and p element to parent li
   taskLi.append(taskSpan, taskP);
 
+  auditTask(taskLi);
 
   // append to ul list on the page
   $("#list-" + taskList).append(taskLi);
@@ -91,11 +92,17 @@ $(".list-group").on("click", "span", function() {
     .val(date);
 
   $(this).replaceWith(dateInput);
+    dateInput.datepicker({
+    minDate: 1,
+    onclose: function() {
+      $(this).trigger("change");
+    }
+  });
 
   dateInput.trigger("focus");
 });
 
-$(".list-group").on("blur", "input[type='text']", function() {
+$(".list-group").on("change", "input[type='text']", function() {
   var date = $(this)
     .val()
     .trim();
@@ -115,8 +122,9 @@ $(".list-group").on("blur", "input[type='text']", function() {
   var taskSpan = $("<span>")
     .addClass("badge badge-primary badge-pill")
     .text(date);
-
   $(this).replaceWith(taskSpan);
+
+  auditTask($(taskSpan).closest(".list-group-item"));
 });
 
 $(".card .list-group").sortable({
@@ -124,18 +132,7 @@ $(".card .list-group").sortable({
   scroll: false,
   tolerance: "pointer",
   helper: "clone",
- /* activate: function(event) {
-    console.log("activate", this);
-  },
-  deactivate: function(event) {
-    console.log("deactivate", this);
-  },
-  over: function(event) {
-    console.log( "over", event.target);
-  },
-  out: function(event) {
-    console.log("out", event.target);
-  }, */
+
   update: function(event) {
   var tempArr = [];
 
@@ -165,6 +162,31 @@ $(".card .list-group").sortable({
   }
 });
 
+var auditTask = function(taskEl) {
+  var date = $(taskEl)
+    .find("span")
+    .text()
+    .trim();
+
+  // convert to moment object at 5:00pm
+  var time = moment(date, "L").set("hour", 17);
+
+  $(taskEl).removeClass("list-group-item-warning list-group-item-danger");
+
+  if(moment().isAfter(time)) {
+    $(taskEl)
+      .addClass("list-group-item-danger");
+  }
+
+  if(moment().isAfter(time)) {
+    $(taskEl)
+      .addClass("list-group-item-danger");
+  } else if (Math.abs(moment().diff(time, "days")) <= 2) {
+    $(taskEl)
+      .addClass("list-group-item-warning");
+  }
+};
+
 $("#trash").droppable({
   accept: ".card .list-group-item",
   tolerance: "touch",
@@ -189,6 +211,10 @@ $("#task-form-modal").on("show.bs.modal", function() {
 $("#task-form-modal").on("shown.bs.modal", function() {
   // highlight textarea
   $("#modalTaskDescription").trigger("focus");
+});
+
+$("#modalDueDate").datepicker({
+  minDate: 1
 });
 
 // save button in modal was clicked
